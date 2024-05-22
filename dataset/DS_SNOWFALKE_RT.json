@@ -1,0 +1,45 @@
+{
+	"name": "DS_SNOWFALKE_RT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Snowflake1",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"sf_account_name": {
+					"value": "@dataset().sf_account_name",
+					"type": "Expression"
+				},
+				"sf_database": {
+					"value": "@dataset().sf_database",
+					"type": "Expression"
+				},
+				"sf_warehouse": {
+					"value": "@dataset().sf_warehouse",
+					"type": "Expression"
+				},
+				"sf_username": {
+					"value": "@dataset().sf_username",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"sf_account_name": {
+				"type": "string"
+			},
+			"sf_warehouse": {
+				"type": "string"
+			},
+			"sf_username": {
+				"type": "string"
+			},
+			"sf_database": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "SnowflakeV2Table",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,74 @@
+{
+	"name": "SnowflakeTable4",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Snowflake1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "SnowflakeV2Table",
+		"schema": [
+			{
+				"name": "OHREQUID",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "DATAPAKID",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "RECORD",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "CHRT_ACCTS",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "CO_AREA",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FISCPER",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FISCVARNT",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "GL_ACCOUNT",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FIELDNM002",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FIELDNM001",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FIELDNM004",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FIELDNM003",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FIELDNM006",
+				"type": "VARCHAR"
+			},
+			{
+				"name": "FIELDNM005",
+				"type": "VARCHAR"
+			}
+		],
+		"typeProperties": {
+			"schema": "PUBLIC",
+			"table": "SAPTEST1"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

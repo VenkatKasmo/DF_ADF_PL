@@ -1,0 +1,17 @@
+{
+	"name": "Sap_Pipeline_Trigger_Daily",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 15,
+				"startTime": "2024-05-20T10:20:00",
+				"timeZone": "India Standard Time"
+			}
+		}
+	}
+}

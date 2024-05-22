@@ -1,0 +1,86 @@
+{
+	"name": "Parquet4",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZURE_BLOB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "sa_string_analytics.parquet",
+				"container": "demo"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "analytics_date",
+				"type": "DATE"
+			},
+			{
+				"name": "plant_name",
+				"type": "UTF8"
+			},
+			{
+				"name": "string_name",
+				"type": "UTF8"
+			},
+			{
+				"name": "rmse_val",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "coeff_val",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "max_current",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "max_current_all",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "string_category",
+				"type": "UTF8"
+			},
+			{
+				"name": "inverter_name",
+				"type": "UTF8"
+			},
+			{
+				"name": "max_current_percent_diff",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "insert_datetime",
+				"type": "INT96"
+			},
+			{
+				"name": "energy_loss",
+				"type": "DECIMAL",
+				"precision": 12,
+				"scale": 4
+			},
+			{
+				"name": "energy",
+				"type": "DECIMAL",
+				"precision": 12,
+				"scale": 4
+			},
+			{
+				"name": "mod_type",
+				"type": "UTF8"
+			},
+			{
+				"name": "updation_timestamp",
+				"type": "INT96"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

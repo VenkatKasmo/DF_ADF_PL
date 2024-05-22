@@ -1,0 +1,408 @@
+{
+	"name": "sap_pipeline_kasmo_copy1",
+	"properties": {
+		"activities": [
+			{
+				"name": "GETTABLE",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "TIMESTAMP",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "TIMESTAMP",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "DateTImeStamp",
+					"value": {
+						"value": "@formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm:ss:fff')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach",
+				"description": "Full and Incremental load",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GETTABLE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GETTABLE').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "If_Is_incremental_Load_flag_copy1",
+							"description": "if is_incremental_load is true then incremental load and false then full load. ",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Max_Time",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@and(not(empty(activity('Max_Time').output.firstRow)), not(equals(activity('Max_Time').output.firstRow['MAX_TIMESTAMP'], null)))\n",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "Full Load",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"enableStaging": true,
+											"stagingSettings": {
+												"linkedServiceName": {
+													"referenceName": "LS_AZURE_BLOB",
+													"type": "LinkedServiceReference"
+												}
+											}
+										}
+									},
+									{
+										"name": "Full_Load_Success_Notification",
+										"type": "Script",
+										"dependsOn": [
+											{
+												"activity": "Full Load",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"scripts": [
+												{
+													"type": "Query",
+													"text": {
+														"value": "CALL DFPCL_STG.DFPCL_PIPELINE.data_load_sf(\n'FULL',\n'DFPCL_POC',\n'DFPCL_SAP',\n'DFPCL_STG',\n'@{item().table_name}',\n'@{activity('Metadata_Table').output.value[0].PRIMARY_KEY}',\n'@{pipeline().TriggerTime}',\n'@{item().data_base}',\n'@{item().table_name}',\n'@{utcNow()}');",
+														"type": "Expression"
+													}
+												}
+											],
+											"scriptBlockExecutionTimeout": "02:00:00"
+										}
+									},
+									{
+										"name": "Full_Load_Failure_Notification",
+										"type": "Script",
+										"dependsOn": [
+											{
+												"activity": "Full Load",
+												"dependencyConditions": [
+													"Failed"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"scripts": [
+												{
+													"type": "Query",
+													"text": {
+														"value": "CALL DFPCL_STG.DFPCL_PIPELINE.cntrl_tbl_alert_mail(\n    'DFPCL_POC',\n    'DFPCL_SAP',\n    '@{pipeline().TriggerTime}',\n    '@{utcNow()}',\n    '@{item().data_base}',\n    '@{item().table_name}',\n    '@{item().table_name}',\n    'Failure',\n    '@{replace(activity('GETTABLE').output.errors[0].Message,'''','')}',\n    0, 0,\n    '@{utcNow()}',\n    0\n);",
+														"type": "Expression"
+													}
+												}
+											],
+											"scriptBlockExecutionTimeout": "02:00:00"
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "Copy_Incremental",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"sink": {
+												"type": "ParquetSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "ParquetWriteSettings"
+												}
+											},
+											"enableStaging": false
+										},
+										"outputs": [
+											{
+												"referenceName": "Sap_Sink_Blob_Storage",
+												"type": "DatasetReference",
+												"parameters": {
+													"FILENAME": {
+														"value": "@concat(item().table_name,'_',variables('DateTImeStamp'),'.parquet')",
+														"type": "Expression"
+													},
+													"FolderName": {
+														"value": "@concat(item().data_base,'/',item().Schema,'/',item().table_name,'/')",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "Incremental_Success_Notification",
+										"type": "Script",
+										"dependsOn": [
+											{
+												"activity": "Copy_Incremental",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"scripts": [
+												{
+													"type": "Query",
+													"text": {
+														"value": "CALL DFPCL_STG.DFPCL_PIPELINE.data_load_sf(\n'INCR',\n'DFPCL_POC',\n'DFPCL_SAP',\n'DFPCL_STG',\n'@{item().table_name}',\n'@{activity('Metadata_Table').output.value}',\n'@{pipeline().TriggerTime}',\n'@{item().data_base}',\n'@{item().table_name}',\n'@{utcNow()}');",
+														"type": "Expression"
+													}
+												}
+											],
+											"scriptBlockExecutionTimeout": "02:00:00"
+										}
+									},
+									{
+										"name": "Incremental_Failure_Notification",
+										"type": "Script",
+										"dependsOn": [
+											{
+												"activity": "Copy_Incremental",
+												"dependencyConditions": [
+													"Failed"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"scripts": [
+												{
+													"type": "Query",
+													"text": {
+														"value": "CALL DFPCL_STG.DFPCL_PIPELINE.cntrl_tbl_alert_mail(\n    'DFPCL_POC',\n    'DFPCL_SAP',\n    '@{pipeline().TriggerTime}',\n    '@{utcNow()}',\n    '@{item().data_base}',\n    '@{item().table_name}',\n    '@{item().table_name}',\n    'Failure',\n    '@{replace(activity('GETTABLE').output.errors[0].Message,'''','')}',\n    0, 0,\n    '@{utcNow()}',\n    0\n);",
+														"type": "Expression"
+													}
+												}
+											],
+											"scriptBlockExecutionTimeout": "02:00:00"
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "Max_Time",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "Metadata_Table",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SnowflakeV2Source",
+									"query": {
+										"value": "SELECT MAX(MAX_TIMESTAMP) as MAX_TIMESTAMP\nFROM DFPCL_POC.DFPCL_SAP.PIPELINE_CONTROL_TABLE\nWHERE SOURCE_SCHEMA_NAME = '@{item().Schema}'\n  AND SOURCE_OBJECT_NAME = '@{item().table_name}'\n  AND STATUS = 'success';",
+										"type": "Expression"
+									},
+									"exportSettings": {
+										"type": "SnowflakeExportCopyCommand"
+									}
+								},
+								"firstRowOnly": true
+							}
+						},
+						{
+							"name": "Metadata_Table",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SnowflakeV2Source",
+									"query": {
+										"value": "select PRIMARY_KEY from DP_FERTILIZERS.DP_FERTI_SCH.adf_medata_tbl\nwhere SAP_TABLE_NAME = '@{item().table_name}'",
+										"type": "Expression"
+									},
+									"exportSettings": {
+										"type": "SnowflakeExportCopyCommand"
+									}
+								},
+								"firstRowOnly": false
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "LookUpFailureNotification",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "GETTABLE",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "CALL DFPCL_STG.DFPCL_PIPELINE.cntrl_tbl_alert_mail(\n    'DFPCL_POC',\n    'DFPCL_SAP',\n    '@{pipeline().TriggerTime}',\n    '@{utcNow()}',\n    '',\n    '',\n    '',\n    'Failure',\n    '@{replace(activity('GETTABLE').output.errors[0].Message,'''','')}',\n    0, 0,\n    '@{utcNow()}',\n    0\n);",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"variables": {
+			"DateTImeStamp": {
+				"type": "String"
+			},
+			"MAX_TIMESTAMP": {
+				"type": "String"
+			},
+			"MaxUpdateTime": {
+				"type": "String"
+			},
+			"Error": {
+				"type": "String"
+			},
+			"Get_Error_Message": {
+				"type": "String"
+			},
+			"filenmae": {
+				"type": "String"
+			},
+			"filetest": {
+				"type": "String"
+			},
+			"folder": {
+				"type": "String"
+			},
+			"captureError": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-04-17T18:16:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

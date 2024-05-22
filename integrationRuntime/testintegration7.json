@@ -1,0 +1,6 @@
+{
+	"name": "testintegration7",
+	"properties": {
+		"type": "SelfHosted"
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"name": "kasmodemodf",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "d07d0238-0187-4c9e-814b-3c99df626ff2",
+		"tenantId": "979ffdff-332b-406c-8644-6d8db569225f"
+	}
+}
